@@ -39,7 +39,10 @@ const configs = {
       simpleLrtVaults: [
         '0xBEEF69Ac7870777598A04B2bd4771c71212E6aBc', // steakLRT
         '0x4C797D53f4772325A8aDFd509F13A2d60Daa7d02', // ssSTETH
-      ]
+      ],
+      mellowLrtVaults: [
+        '0x5E362eb2c0706Bd1d134689eC75176018385430B', // DVstETH
+      ],
     },
     base: {
       morpho: [
@@ -74,13 +77,28 @@ const configs = {
 module.exports = getCuratorExport(configs)
 
 Object.keys(configs.blockchains).forEach(chain => {
-  const { simpleLrtVaults, kaminoVaults } = configs.blockchains[chain]
+  const { simpleLrtVaults, kaminoVaults, mellowLrtVaults } = configs.blockchains[chain]
   if (simpleLrtVaults && simpleLrtVaults.length > 0) {
     if (!module.exports[chain]) module.exports[chain] = { tvl: async () => ({}) }
     const originalTvl = module.exports[chain].tvl
     module.exports[chain].tvl = async (api) => {
       await originalTvl(api)
       return api.erc4626Sum({ calls: simpleLrtVaults, tokenAbi: 'address:asset', balanceAbi: 'uint256:totalAssets', permitFailure: true });
+    }
+  }
+
+  if (mellowLrtVaults && mellowLrtVaults.length > 0) {
+    if (!module.exports[chain]) module.exports[chain] = { tvl: async () => ({}) }
+    const originalTvl = module.exports[chain].tvl
+    module.exports[chain].tvl = async (api) => {
+      await originalTvl(api)
+      const mellowLrtTvl = await api.multiCall({ abi: 'function underlyingTvl() public view returns (address[] tokens, uint256[] values)', calls: mellowLrtVaults, permitFailure: true })
+      mellowLrtTvl.forEach((i) => {
+        if (!i) return;
+        const { tokens, values } = i
+        api.add(tokens, values)
+      })
+      return api.getBalances()
     }
   }
 

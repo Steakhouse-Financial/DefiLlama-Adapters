@@ -35,6 +35,10 @@ const configs = {
         '0x097FFEDb80d4b2Ca6105a07a4D90eB739C45A666', // steakUSDTlite
         '0xbeEf094333AEdD535c130958c204E84f681FD9FA', // steakWBTC
         '0xBEefb9f61CC44895d8AEc381373555a64191A9c4', // vbshUSDC
+      ],
+      simpleLrtVaults: [
+        '0xBEEF69Ac7870777598A04B2bd4771c71212E6aBc', // steakLRT
+        '0x4C797D53f4772325A8aDFd509F13A2d60Daa7d02', // ssSTETH
       ]
     },
     base: {

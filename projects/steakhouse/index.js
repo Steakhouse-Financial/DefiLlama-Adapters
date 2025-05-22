@@ -66,3 +66,15 @@ const configs = {
 }
 
 module.exports = getCuratorExport(configs)
+
+Object.keys(configs.blockchains).forEach(chain => {
+  const { simpleLrtVaults } = configs.blockchains[chain]
+  if (simpleLrtVaults && simpleLrtVaults.length > 0) {
+    if (!module.exports[chain]) module.exports[chain] = { tvl: async () => ({}) }
+    const originalTvl = module.exports[chain].tvl
+    module.exports[chain].tvl = async (api) => {
+      await originalTvl(api)
+      return api.erc4626Sum({ calls: simpleLrtVaults, tokenAbi: 'address:asset', balanceAbi: 'uint256:totalAssets', permitFailure: true });
+    }
+  }
+})

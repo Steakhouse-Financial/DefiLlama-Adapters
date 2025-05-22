@@ -62,19 +62,47 @@ const configs = {
         '0x9b2fa89E23Ae84f7895A58f8ec7Cb0b267ED8a21', // bbqUSDT0
       ],
     },
+    solana: {
+      kaminoVaults: [
+        'HDsayqAsDWy3QvANGqh2yNraqcD8Fnjgh73Mhb3WRS5E',
+        'BqBsS4myH82S4yfqeKjXSF7yErWwSi5WTshSzKmHQgzw',
+      ]
+    }
   }
 }
 
 module.exports = getCuratorExport(configs)
 
 Object.keys(configs.blockchains).forEach(chain => {
-  const { simpleLrtVaults } = configs.blockchains[chain]
+  const { simpleLrtVaults, kaminoVaults } = configs.blockchains[chain]
   if (simpleLrtVaults && simpleLrtVaults.length > 0) {
     if (!module.exports[chain]) module.exports[chain] = { tvl: async () => ({}) }
     const originalTvl = module.exports[chain].tvl
     module.exports[chain].tvl = async (api) => {
       await originalTvl(api)
       return api.erc4626Sum({ calls: simpleLrtVaults, tokenAbi: 'address:asset', balanceAbi: 'uint256:totalAssets', permitFailure: true });
+    }
+  }
+
+  if (chain === 'solana' && kaminoVaults && kaminoVaults.length > 0) {
+    if (!module.exports.solana) module.exports.solana = { tvl: async () => ({}) }
+    const originalSolanaTvl = module.exports.solana.tvl
+    module.exports.solana.tvl = async (api) => {
+      await originalSolanaTvl(api)
+      const { get } = require('../helper/http')
+      for (const vaultAddress of kaminoVaults) {
+        try {
+          const metrics = await get(`https://api.kamino.finance/kvaults/${vaultAddress}/metrics?env=mainnet-beta`)
+          if (metrics && metrics.tokensInvestedUsd) {
+            api.addUSDValue(parseFloat(metrics.tokensInvestedUsd))
+          } else {
+            console.error(`Could not fetch TVL for Kamino vault ${vaultAddress}: Unexpected response format or missing tokensInvestedUsd`, metrics)
+          }
+        } catch (e) {
+          console.error(`Could not fetch TVL for Kamino vault ${vaultAddress}`, e)
+        }
+      }
+      return api.getBalances()
     }
   }
 })

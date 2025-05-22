@@ -52,6 +52,12 @@ const configs = {
         '0xBEef03f0BF3cb2e348393008a826538AaDD7d183', // steakUSDM
       ],
     },
+    corn: {
+      morpho: [
+        '0xa7Ba08CFc37e7CC67404d4996FFBB3E977490115', // bbqBTCN
+        '0x9b2fa89E23Ae84f7895A58f8ec7Cb0b267ED8a21', // bbqUSDT0
+      ],
+    },
   }
 }
 

@@ -1,4 +1,6 @@
 const { getCuratorExport } = require("../helper/curators");
+const { get } = require("../helper/http");
+const ADDRESSES = require('../helper/coreAssets.json');
 
 const configs = {
   methodology: 'Count all assets are deposited in all vaults curated by Steakhouse Financial.',
@@ -65,6 +67,33 @@ const configs = {
         '0x0000aeB716a0DF7A9A1AAd119b772644Bc089dA8',
       ],
     },
+    solana: {
+      kaminoVaults: [
+        { address: 'HDsayqAsDWy3QvANGqh2yNraqcD8Fnjgh73Mhb3WRS5E', token: ADDRESSES.solana.USDC },
+        { address: 'BqBsS4myH82S4yfqeKjXSF7yErWwSi5WTshSzKmHQgzw', token: ADDRESSES.solana.USDG },
+        { address: 'BEEfo7xwgK2ZP13Pxo7qqTPzAteKJmXjVWtMWcXSvbn2', token: ADDRESSES.solana.USDC },
+        { address: 'BoZDRc1RDY9FzUZZ19WT4GbtTnnbXQ8AGSU5ByEw3ut5', token: ADDRESSES.solana.USDG },
+      ]
+    }
   }
 }
-module.exports = getCuratorExport(configs)
+
+async function solana(api) {
+  const { kaminoVaults } = configs.blockchains.solana
+
+  for (const { address, token } of kaminoVaults) {
+    try {
+      const metrics = await get(`https://api.kamino.finance/kvaults/${address}/metrics?env=mainnet-beta`)
+      if (metrics?.tokensInvested) {
+        api.add(token, parseFloat(metrics.tokensInvested) * 1e6)
+      }
+    } catch (e) {
+      console.error(`Could not fetch TVL for Kamino vault ${address}:`, e.message)
+    }
+  }
+}
+
+module.exports = {
+  ...getCuratorExport(configs),
+  solana: { tvl: solana },
+}
